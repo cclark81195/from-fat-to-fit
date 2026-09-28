@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>From Fat to Fit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+  :root {
+    --bg-1: #eafff5;
+    --bg-2: #eafbff;
+    --card: #ffffff;
+    --text: #12271f;
+    --muted: #66756e;
+    --accent: #059669;
+    --accent-2: #10b981;
+    --accent-dark: #047857;
+    --coral: #f97316;
+    --coral-dark: #ea580c;
+    --border: #e3ede8;
+    --gold: #eab308;
+    --silver: #9ca3af;
+    --bronze: #b45309;
+    --shadow: 0 8px 24px -8px rgba(5, 150, 105, 0.18), 0 2px 6px -2px rgba(18, 39, 31, 0.08);
+    --shadow-lg: 0 20px 45px -18px rgba(5, 150, 105, 0.35);
+    --radius: 18px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background:
+      radial-gradient(1200px 600px at 15% -10%, #d2ffe9 0%, transparent 60%),
+      radial-gradient(900px 500px at 110% 10%, #d6f7ff 0%, transparent 55%),
+      linear-gradient(180deg, var(--bg-1), var(--bg-2));
+    background-attachment: fixed;
+    color: var(--text);
+    min-height: 100vh;
+  }
+  h1, h2 { font-family: "Poppins", "Inter", sans-serif; }
+  .wrap { max-width: 480px; margin: 0 auto; padding: 20px 16px 72px; }
+
+  /* Hero */
+  .hero {
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 55%, #34d399 100%);
+    border-radius: 22px;
+    padding: 26px 22px;
+    color: #fff;
+    box-shadow: var(--shadow-lg);
+    margin-bottom: 18px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::after {
+    content: "";
+    position: absolute;
+    right: -40px; top: -50px;
+    width: 180px; height: 180px;
+    background: radial-gradient(circle, rgba(255,255,255,0.28) 0%, transparent 70%);
+  }
+  .hero h1 {
+    font-size: 1.55rem;
+    font-weight: 800;
+    margin: 0 0 4px;
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .hero .sub {
+    color: rgba(255,255,255,0.92);
+    font-size: 0.88rem;
+    margin: 0;
+    position: relative;
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+    animation: fadeUp 0.35s ease both;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .card h2 { font-size: 1.05rem; margin: 0 0 12px; font-weight: 700; }
+
+  /* Quote card */
+  .quote-card {
+    background: linear-gradient(135deg, #fff7ed 0%, #fffbeb 100%);
+    border: 1px solid #fde8c9;
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+  }
+  .quote-card .quote-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--coral-dark);
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .quote-card .quote-text {
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.45;
+    color: #3a2a12;
+    font-style: italic;
+  }
+  .quote-card.first {
+    background: linear-gradient(135deg, #fefce8 0%, #fff9db 100%);
+    border-color: #fde68a;
+  }
+  .quote-card.first .quote-label { color: var(--gold); }
+  .quote-card.last {
+    background: linear-gradient(135deg, #ecfdf5 0%, #f0fdfa 100%);
+    border-color: #a7f3d0;
+  }
+  .quote-card.last .quote-label { color: var(--accent-dark); }
+  .quote-card.last .quote-text { color: #0f3b2e; }
+
+  label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 6px; font-weight: 500; }
+  input {
+    width: 100%;
+    padding: 11px 13px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-size: 1rem;
+    margin-bottom: 14px;
+    font-family: inherit;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    background: #fbfdfc;
+  }
+  input:focus {
+    outline: none;
+    border-color: var(--accent-2);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+    background: #fff;
+  }
+  button {
+    width: 100%;
+    padding: 13px;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+    color: white;
+    font-size: 1rem;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    box-shadow: 0 6px 16px -6px rgba(5, 150, 105, 0.55);
+    transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+  }
+  button:hover { filter: brightness(1.05); transform: translateY(-1px); box-shadow: 0 10px 20px -6px rgba(5, 150, 105, 0.55); }
+  button:active { transform: translateY(0px) scale(0.99); }
+  button.secondary {
+    background: transparent;
+    color: var(--accent-dark);
+    border: 1.5px solid var(--accent-2);
+    box-shadow: none;
+  }
+  button.secondary:hover { background: #ecfdf5; transform: none; box-shadow: none; }
+  .row { display: flex; gap: 10px; }
+  .row > * { flex: 1; }
+
+  .tabs { display: flex; gap: 6px; margin-bottom: 16px; background: #fff; padding: 5px; border-radius: 14px; border: 1px solid var(--border); box-shadow: var(--shadow); }
+  .tab {
+    flex: 1;
+    text-align: center;
+    padding: 10px 6px;
+    border-radius: 10px;
+    color: var(--muted);
+    font-size: 0.83rem;
+    font-weight: 600;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s, color 0.15s;
+  }
+  .tab.active { background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%); color: white; box-shadow: 0 4px 10px -4px rgba(5,150,105,0.6); }
+
+  /* Stats */
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 4px; }
+  .stat {
+    background: linear-gradient(160deg, #f0fdf7 0%, #e6faef 100%);
+    border: 1px solid #d3f3e2;
+    border-radius: 14px;
+    padding: 16px 10px;
+    text-align: center;
+  }
+  .stat .num { font-size: 1.7rem; font-weight: 800; color: var(--accent-dark); font-family: "Poppins", sans-serif; }
+  .stat .label { font-size: 0.72rem; color: var(--muted); margin-top: 3px; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
+
+  /* Goal progress bar */
+  .progress-track {
+    width: 100%;
+    height: 12px;
+    background: #eef2f0;
+    border-radius: 999px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent) 0%, var(--accent-2) 60%, #34d399 100%);
+    border-radius: 999px;
+    transition: width 0.4s ease;
+  }
+
+  /* Leaderboard */
+  .lb-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 13px 12px;
+    border-radius: 12px;
+    margin-bottom: 8px;
+    border: 1px solid transparent;
+    transition: transform 0.12s ease;
+  }
+  .lb-row:hover { transform: translateX(2px); }
+  .lb-row.you { background: linear-gradient(135deg, #ecfdf5 0%, #f0fdfa 100%); border: 1.5px solid var(--accent-2); box-shadow: 0 4px 12px -6px rgba(5,150,105,0.4); }
+  .lb-row:not(.you) { background: #f8faf9; }
+  .lb-row.rank-1 { background: linear-gradient(135deg, #fffbeb 0%, #fef9c3 100%); border: 1.5px solid #fde047; }
+  .lb-rank { font-weight: 800; width: 30px; color: var(--muted); font-size: 1.05rem; }
+  .lb-name { flex: 1; padding: 0 8px; font-weight: 600; }
+  .lb-pct { font-weight: 800; color: var(--accent-dark); font-family: "Poppins", sans-serif; }
+  .lb-rank.gold { color: var(--gold); font-size: 1.3rem; }
+  .lb-rank.silver { color: var(--silver); font-size: 1.3rem; }
+  .lb-rank.bronze { color: var(--bronze); font-size: 1.3rem; }
+
+  .hidden { display: none !important; }
+  .error { color: #b42318; font-size: 0.85rem; margin: -6px 0 14px; font-weight: 500; }
+  .muted-small { color: var(--muted); font-size: 0.8rem; margin-top: 10px; }
+  .code-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+    border: 1.5px dashed var(--accent-2);
+    color: var(--accent-dark);
+    font-weight: 800;
+    letter-spacing: 2px;
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-size: 1.2rem;
+    font-family: "Poppins", sans-serif;
+  }
+  a.link { color: var(--accent-dark); cursor: pointer; text-decoration: underline; font-size: 0.85rem; font-weight: 500; }
+  .top-bar { display:flex; justify-content: space-between; align-items:center; margin-bottom: 14px; padding: 0 2px; }
+  .top-bar .signout { color: var(--muted); font-size: 0.8rem; cursor:pointer; font-weight: 500; }
+  .top-bar .signout:hover { color: var(--coral-dark); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- AUTH -->
+  <div id="auth-hero" class="hero">
+    <h1>🔥 From Fat to Fit</h1>
+    <p class="sub">Track progress, keep the numbers private, race to the top.</p>
+  </div>
+  <div id="auth-view" class="card">
+    <h2>Sign in</h2>
+    <div id="auth-email-step">
+      <label for="email">Email</label>
+      <input id="email" type="email" placeholder="you@example.com" />
+      <div id="auth-error" class="error hidden"></div>
+      <button id="send-link-btn">Send me a sign-in link</button>
+      <p class="muted-small">We'll email you a link — no password needed. Click it on this device to finish signing in.</p>
+    </div>
+    <div id="auth-sent-step" class="hidden">
+      <p>Check your email for a sign-in link. Once you click it, come back to this tab.</p>
+      <a class="link" id="auth-resend">Use a different email</a>
+    </div>
+  </div>
+
+  <!-- APP (shown once signed in) -->
+  <div id="app-view" class="hidden">
+    <div class="top-bar">
+      <span id="who" class="muted-small"></span>
+      <span class="signout" id="signout-btn">Sign out</span>
+    </div>
+
+    <!-- No challenge yet -->
+    <div id="onboard-view">
+      <div class="hero" style="margin-bottom:16px;">
+        <h1>🔥 From Fat to Fit</h1>
+        <p class="sub">Join your family's challenge or start a new one.</p>
+      </div>
+
+      <div class="card">
+        <h2>🔑 Join a challenge</h2>
+        <label for="join-code">Join code</label>
+        <input id="join-code" placeholder="e.g. AB3CD9" style="text-transform:uppercase" />
+        <label for="join-name">Your display name</label>
+        <input id="join-name" placeholder="How you'll appear on the leaderboard" />
+        <label for="join-weight">Your starting weight (lbs)</label>
+        <input id="join-weight" type="number" step="0.1" placeholder="e.g. 210" />
+        <div id="join-error" class="error hidden"></div>
+        <button id="join-btn">Join challenge</button>
+        <p class="muted-small">Only you will ever see this starting weight. Everyone else only ever sees your % lost and your rank.</p>
+      </div>
+
+      <div class="card">
+        <h2>🚀 Start a new challenge</h2>
+        <label for="new-challenge-name">Challenge name</label>
+        <input id="new-challenge-name" placeholder="e.g. Clark Family Fall Challenge" />
+        <button id="create-btn" class="secondary">Create challenge</button>
+        <div id="create-result" class="hidden" style="margin-top:14px;">
+          <p>Share this join code with your family:</p>
+          <span class="code-badge" id="new-code"></span>
+          <p class="muted-small">You'll still need to join it yourself below with your own starting weight.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Inside a challenge -->
+    <div id="main-view" class="hidden">
+      <div class="tabs">
+        <div class="tab active" data-tab="stats">🏠 Home</div>
+        <div class="tab" data-tab="log">⚖️ Log</div>
+        <div class="tab" data-tab="board">🏆 Leaderboard</div>
+      </div>
+
+      <div id="panel-stats" class="panel">
+        <div class="quote-card">
+          <div class="quote-label">✨ Today's Motivation</div>
+          <div class="quote-text" id="daily-quote">Loading your daily boost…</div>
+        </div>
+
+        <div class="card">
+          <h2 id="challenge-title">Challenge</h2>
+          <p class="muted-small" id="greeting" style="margin-top:-6px; margin-bottom: 12px;"></p>
+          <div class="stat-grid">
+            <div class="stat"><div class="num" id="stat-pct">–</div><div class="label">% Lost</div></div>
+            <div class="stat"><div class="num" id="stat-lbs">–</div><div class="label">Lbs Lost</div></div>
+          </div>
+          <p class="muted-small" id="stat-meta"></p>
+        </div>
+
+        <div class="card">
+          <h2>🎯 Your goal</h2>
+          <p class="muted-small" style="margin-top:-8px;">Private to you — nobody else ever sees this, and it isn't used for the leaderboard.</p>
+
+          <div id="goal-progress" class="hidden" style="margin-bottom: 16px;">
+            <div class="progress-track">
+              <div class="progress-fill" id="goal-progress-fill" style="width: 0%;"></div>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-top: 6px;">
+              <span class="muted-small" id="goal-progress-label" style="margin-top:0;"></span>
+              <span class="muted-small" id="goal-remaining-label" style="margin-top:0;"></span>
+            </div>
+          </div>
+
+          <label for="goal-weight">Goal weight (lbs)</label>
+          <input id="goal-weight" type="number" step="0.1" placeholder="e.g. 185" />
+          <div id="goal-error" class="error hidden"></div>
+          <button id="save-goal-btn" class="secondary">Save goal</button>
+        </div>
+      </div>
+
+      <div id="panel-log" class="panel hidden">
+        <div class="card">
+          <h2>⚖️ Log today's weigh-in</h2>
+          <label for="new-weight">Current weight (lbs)</label>
+          <input id="new-weight" type="number" step="0.1" placeholder="e.g. 205.4" />
+          <label for="weigh-date">Date</label>
+          <input id="weigh-date" type="date" />
+          <div id="log-error" class="error hidden"></div>
+          <button id="log-btn">Save weigh-in</button>
+        </div>
+      </div>
+
+      <div id="panel-board" class="panel hidden">
+        <div class="card">
+          <h2>🏆 Leaderboard — % of weight lost</h2>
+          <div id="leaderboard-list"></div>
+          <p class="muted-small">You only ever see everyone's percent lost and rank — never their weight or pounds lost.</p>
+        </div>
+
+        <div class="quote-card first hidden" id="first-quote-card">
+          <div class="quote-label">👑 Crushing It</div>
+          <div class="quote-text" id="first-quote-text"></div>
+        </div>
+
+        <div class="quote-card last hidden" id="last-quote-card">
+          <div class="quote-label">💪 Keep Fighting</div>
+          <div class="quote-text" id="last-quote-text"></div>
+        </div>
+      </div>
+
+      <p class="muted-small">Join code for this challenge: <b id="challenge-code"></b> · <a class="link" id="switch-challenge">Switch / join another challenge</a></p>
+    </div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="quotes.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
