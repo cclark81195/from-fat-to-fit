@@ -17,6 +17,10 @@ It also includes:
   with a private progress bar toward it. Exactly as private as starting
   weight — nobody else can read it, and it never factors into the
   leaderboard, which is driven only by percent of starting weight lost.
+- **Weigh-in history** on the Log tab — every past entry, editable or
+  deletable inline, plus a **trend chart** (a dependency-free inline SVG
+  line chart) showing weight over time with a dashed line at your goal
+  weight once you've set one.
 
 ## How the privacy works (read this first)
 
