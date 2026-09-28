@@ -9,6 +9,7 @@ const show = (el) => el.classList.remove("hidden");
 const hide = (el) => el.classList.add("hidden");
 
 let currentChallengeId = localStorage.getItem("wlc_challenge_id") || null;
+let currentGoalWeight = null;
 
 // ---------------------------------------------------------------------------
 // Auth
@@ -213,6 +214,7 @@ async function openChallenge(challengeId) {
 
   await loadMyStats();
   await loadLeaderboard();
+  await loadHistory();
 }
 
 async function loadMyStats() {
@@ -241,6 +243,7 @@ async function loadMyStats() {
   } else {
     hide($("goal-progress"));
   }
+  currentGoalWeight = row.goal_weight ?? null;
 }
 
 $("save-goal-btn").addEventListener("click", async () => {
@@ -266,6 +269,7 @@ $("save-goal-btn").addEventListener("click", async () => {
   }
 
   await loadMyStats();
+  await loadHistory();
 });
 
 async function loadLeaderboard() {
@@ -356,8 +360,225 @@ $("log-btn").addEventListener("click", async () => {
   $("new-weight").value = "";
   await loadMyStats();
   await loadLeaderboard();
+  await loadHistory();
   selectTab("stats");
 });
+
+// ---------------------------------------------------------------------------
+// History: view, edit, delete past weigh-ins + trend chart
+// ---------------------------------------------------------------------------
+
+let historyRows = []; // cached ascending-by-date, used by both the list and the chart
+
+async function loadHistory() {
+  const { data, error } = await db
+    .from("weigh_ins")
+    .select("id, weight, recorded_on")
+    .eq("challenge_id", currentChallengeId)
+    .order("recorded_on", { ascending: true });
+
+  if (error) {
+    $("history-list").innerHTML = `<p class="error">${error.message}</p>`;
+    return;
+  }
+
+  historyRows = data || [];
+  renderHistoryList();
+  renderTrendChart();
+}
+
+function renderHistoryList() {
+  const list = $("history-list");
+  list.innerHTML = "";
+
+  if (historyRows.length === 0) {
+    show($("history-empty"));
+    return;
+  }
+  hide($("history-empty"));
+
+  // Most recent first for the list (the chart below uses ascending order).
+  [...historyRows].reverse().forEach((entry) => {
+    const row = document.createElement("div");
+    row.className = "hist-row";
+
+    const dateSpan = document.createElement("span");
+    dateSpan.className = "hist-date";
+    dateSpan.textContent = entry.recorded_on;
+
+    const weightSpan = document.createElement("span");
+    weightSpan.className = "hist-weight";
+    weightSpan.textContent = `${entry.weight} lbs`;
+
+    const actions = document.createElement("span");
+    actions.className = "hist-actions";
+
+    const editBtn = document.createElement("button");
+    editBtn.type = "button";
+    editBtn.className = "hist-btn";
+    editBtn.title = "Edit";
+    editBtn.textContent = "✏️";
+
+    const deleteBtn = document.createElement("button");
+    deleteBtn.type = "button";
+    deleteBtn.className = "hist-btn danger";
+    deleteBtn.title = "Delete";
+    deleteBtn.textContent = "🗑️";
+
+    editBtn.addEventListener("click", () => startEditRow(row, entry, weightSpan, actions));
+    deleteBtn.addEventListener("click", () => deleteRow(entry));
+
+    actions.appendChild(editBtn);
+    actions.appendChild(deleteBtn);
+    row.appendChild(dateSpan);
+    row.appendChild(weightSpan);
+    row.appendChild(actions);
+    list.appendChild(row);
+  });
+}
+
+function startEditRow(row, entry, weightSpan, actions) {
+  const input = document.createElement("input");
+  input.type = "number";
+  input.step = "0.1";
+  input.className = "hist-edit-input";
+  input.value = entry.weight;
+
+  const saveBtn = document.createElement("button");
+  saveBtn.type = "button";
+  saveBtn.className = "hist-btn";
+  saveBtn.title = "Save";
+  saveBtn.textContent = "✅";
+
+  const cancelBtn = document.createElement("button");
+  cancelBtn.type = "button";
+  cancelBtn.className = "hist-btn";
+  cancelBtn.title = "Cancel";
+  cancelBtn.textContent = "✖️";
+
+  saveBtn.addEventListener("click", async () => {
+    const newWeight = parseFloat(input.value);
+    if (!newWeight || newWeight <= 0) return;
+    const { error } = await db.from("weigh_ins").update({ weight: newWeight }).eq("id", entry.id);
+    if (error) {
+      alert(error.message);
+      return;
+    }
+    await loadMyStats();
+    await loadLeaderboard();
+    await loadHistory();
+  });
+
+  cancelBtn.addEventListener("click", () => renderHistoryList());
+
+  weightSpan.replaceWith(input);
+  actions.innerHTML = "";
+  actions.appendChild(saveBtn);
+  actions.appendChild(cancelBtn);
+}
+
+async function deleteRow(entry) {
+  if (!confirm(`Delete the ${entry.weight} lbs entry from ${entry.recorded_on}?`)) return;
+  const { error } = await db.from("weigh_ins").delete().eq("id", entry.id);
+  if (error) {
+    alert(error.message);
+    return;
+  }
+  await loadMyStats();
+  await loadLeaderboard();
+  await loadHistory();
+}
+
+// Parses a "YYYY-MM-DD" date as a LOCAL midnight (not UTC), so it never
+// shifts a day off in a negative-UTC-offset timezone the way `new
+// Date("YYYY-MM-DD")` can.
+function parseDateLocal(str) {
+  const [y, m, d] = str.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function renderTrendChart() {
+  const wrap = $("trend-chart-wrap");
+  if (historyRows.length < 2) {
+    hide(wrap);
+    show($("trend-empty"));
+    return;
+  }
+  hide($("trend-empty"));
+  show(wrap);
+
+  const W = 320, H = 170;
+  const padL = 38, padR = 14, padT = 14, padB = 26;
+
+  const points = historyRows.map((r) => ({
+    t: parseDateLocal(r.recorded_on).getTime(),
+    w: r.weight,
+    date: r.recorded_on,
+  }));
+
+  const weights = points.map((p) => p.w);
+  if (currentGoalWeight != null) weights.push(currentGoalWeight);
+  let minW = Math.min(...weights);
+  let maxW = Math.max(...weights);
+  if (minW === maxW) { minW -= 1; maxW += 1; } // avoid a zero-height range
+  const padRange = (maxW - minW) * 0.1 || 1;
+  minW -= padRange;
+  maxW += padRange;
+
+  const minT = points[0].t;
+  const maxT = points[points.length - 1].t;
+  const spanT = maxT - minT || 1;
+
+  const x = (t) => padL + ((t - minT) / spanT) * (W - padL - padR);
+  const y = (w) => padT + (1 - (w - minW) / (maxW - minW)) * (H - padT - padB);
+
+  const linePoints = points.map((p) => `${x(p.t).toFixed(1)},${y(p.w).toFixed(1)}`).join(" ");
+  const areaPoints = `${x(points[0].t).toFixed(1)},${(H - padB).toFixed(1)} ${linePoints} ${x(
+    points[points.length - 1].t
+  ).toFixed(1)},${(H - padB).toFixed(1)}`;
+
+  const circles = points
+    .map(
+      (p) =>
+        `<circle cx="${x(p.t).toFixed(1)}" cy="${y(p.w).toFixed(1)}" r="3.5" fill="#059669" stroke="#fff" stroke-width="1.5"><title>${
+          p.date
+        }: ${p.w} lbs</title></circle>`
+    )
+    .join("");
+
+  const goalLine =
+    currentGoalWeight != null
+      ? `<line x1="${padL}" y1="${y(currentGoalWeight).toFixed(1)}" x2="${W - padR}" y2="${y(
+          currentGoalWeight
+        ).toFixed(1)}" stroke="#f97316" stroke-width="1.5" stroke-dasharray="4 3" />
+         <text x="${W - padR}" y="${y(currentGoalWeight).toFixed(1) - 4}" text-anchor="end" font-size="9" fill="#ea580c" font-family="Inter, sans-serif">Goal</text>`
+      : "";
+
+  const firstLabel = parseDateLocal(points[0].date).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  const lastLabel = parseDateLocal(points[points.length - 1].date).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
+
+  wrap.innerHTML = `
+    <svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Weight trend chart">
+      <defs>
+        <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#10b981" stop-opacity="0.35"/>
+          <stop offset="100%" stop-color="#10b981" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <text x="${padL}" y="${padT}" font-size="9" fill="#66756e" font-family="Inter, sans-serif">${maxW.toFixed(0)} lbs</text>
+      <text x="${padL}" y="${H - padB}" font-size="9" fill="#66756e" font-family="Inter, sans-serif">${minW.toFixed(0)} lbs</text>
+      ${goalLine}
+      <polygon points="${areaPoints}" fill="url(#trendFill)" />
+      <polyline points="${linePoints}" fill="none" stroke="#059669" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
+      ${circles}
+      <text x="${padL}" y="${H - 6}" font-size="9" fill="#66756e" font-family="Inter, sans-serif">${firstLabel}</text>
+      <text x="${W - padR}" y="${H - 6}" text-anchor="end" font-size="9" fill="#66756e" font-family="Inter, sans-serif">${lastLabel}</text>
+    </svg>
+  `;
+}
 
 // ---------------------------------------------------------------------------
 // Tabs
@@ -375,6 +596,7 @@ function selectTab(name) {
   show($("panel-" + name));
   if (name === "board") loadLeaderboard();
   if (name === "stats") loadMyStats();
+  if (name === "log") loadHistory();
 }
 
 function escapeHtml(str) {

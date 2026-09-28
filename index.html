@@ -174,6 +174,42 @@
   .row { display: flex; gap: 10px; }
   .row > * { flex: 1; }
 
+  /* History list */
+  .hist-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 4px;
+    border-bottom: 1px solid var(--border);
+  }
+  .hist-row:last-child { border-bottom: none; }
+  .hist-date { font-size: 0.85rem; color: var(--muted); width: 92px; flex-shrink: 0; }
+  .hist-weight { font-weight: 700; flex: 1; font-family: "Poppins", sans-serif; }
+  .hist-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .hist-btn {
+    width: 30px; height: 30px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 8px;
+    border: 1.5px solid var(--border);
+    background: #fbfdfc;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background 0.12s, border-color 0.12s;
+  }
+  .hist-btn:hover { background: #ecfdf5; border-color: var(--accent-2); }
+  .hist-btn.danger:hover { background: #fef2f2; border-color: #f87171; }
+  .hist-edit-input {
+    width: 90px;
+    padding: 6px 8px;
+    margin: 0;
+    border: 1.5px solid var(--accent-2);
+    border-radius: 8px;
+    font-size: 0.9rem;
+  }
+
+  /* Trend chart */
+  #trend-chart-wrap svg { width: 100%; height: auto; display: block; }
+
   .tabs { display: flex; gap: 6px; margin-bottom: 16px; background: #fff; padding: 5px; border-radius: 14px; border: 1px solid var(--border); box-shadow: var(--shadow); }
   .tab {
     flex: 1;
@@ -377,6 +413,19 @@
           <input id="weigh-date" type="date" />
           <div id="log-error" class="error hidden"></div>
           <button id="log-btn">Save weigh-in</button>
+        </div>
+
+        <div class="card">
+          <h2>📈 Your trend</h2>
+          <div id="trend-empty" class="muted-small">Log at least two weigh-ins to see your trend line.</div>
+          <div id="trend-chart-wrap" class="hidden"></div>
+        </div>
+
+        <div class="card">
+          <h2>📜 History</h2>
+          <p class="muted-small" style="margin-top:-8px;">Only visible to you. Edit a typo or delete an entry any time.</p>
+          <div id="history-list"></div>
+          <div id="history-empty" class="muted-small hidden">No weigh-ins logged yet.</div>
         </div>
       </div>
 
