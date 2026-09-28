@@ -22,17 +22,36 @@ $("send-link-btn").addEventListener("click", async () => {
     show($("auth-error"));
     return;
   }
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    options: { emailRedirectTo: window.location.href },
-  });
-  if (error) {
-    $("auth-error").textContent = error.message;
+
+  const btn = $("send-link-btn");
+  const originalLabel = btn.textContent;
+  btn.textContent = "Sending…";
+  btn.disabled = true;
+
+  try {
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: window.location.href },
+    });
+    if (error) {
+      $("auth-error").textContent = error.message;
+      show($("auth-error"));
+      return;
+    }
+    hide($("auth-email-step"));
+    show($("auth-sent-step"));
+  } catch (err) {
+    // A network-level failure (blocked request, offline, etc.) throws
+    // instead of returning {error} — without this catch, that used to
+    // fail completely silently. Now it's at least visible.
+    $("auth-error").textContent =
+      "Couldn't reach the server (" + (err && err.message ? err.message : "network error") +
+      "). Check your connection, or try disabling any ad blocker / VPN / private browsing mode and try again.";
     show($("auth-error"));
-    return;
+  } finally {
+    btn.textContent = originalLabel;
+    btn.disabled = false;
   }
-  hide($("auth-email-step"));
-  show($("auth-sent-step"));
 });
 
 $("auth-resend").addEventListener("click", () => {
