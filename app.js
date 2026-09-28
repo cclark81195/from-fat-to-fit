@@ -2,7 +2,7 @@
 // All privacy enforcement happens in Postgres (see schema.sql). This file
 // just calls Supabase auth + the RPC functions and renders the result.
 
-const supabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+const db = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
 
 const $ = (id) => document.getElementById(id);
 const show = (el) => el.classList.remove("hidden");
@@ -29,7 +29,7 @@ $("send-link-btn").addEventListener("click", async () => {
   btn.disabled = true;
 
   try {
-    const { error } = await supabase.auth.signInWithOtp({
+    const { error } = await db.auth.signInWithOtp({
       email,
       options: { emailRedirectTo: window.location.href },
     });
@@ -60,7 +60,7 @@ $("auth-resend").addEventListener("click", () => {
 });
 
 $("signout-btn").addEventListener("click", async () => {
-  await supabase.auth.signOut();
+  await db.auth.signOut();
   localStorage.removeItem("wlc_challenge_id");
   currentChallengeId = null;
   renderSignedOut();
@@ -74,7 +74,7 @@ $("switch-challenge").addEventListener("click", () => {
   loadMyChallenges();
 });
 
-supabase.auth.onAuthStateChange((_event, session) => {
+db.auth.onAuthStateChange((_event, session) => {
   if (session) {
     renderSignedIn(session);
   } else {
@@ -83,7 +83,7 @@ supabase.auth.onAuthStateChange((_event, session) => {
 });
 
 async function init() {
-  const { data } = await supabase.auth.getSession();
+  const { data } = await db.auth.getSession();
   if (data.session) {
     renderSignedIn(data.session);
   } else {
@@ -118,7 +118,7 @@ async function renderSignedIn(session) {
 
 async function loadMyChallenges() {
   // Show any challenges this user has already joined, as quick-select buttons.
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("participants")
     .select("challenge_id, challenges(name, join_code)")
     .order("joined_at", { ascending: false });
@@ -155,7 +155,7 @@ $("join-btn").addEventListener("click", async () => {
     return;
   }
 
-  const { data, error } = await supabase.rpc("join_challenge", {
+  const { data, error } = await db.rpc("join_challenge", {
     p_join_code: code,
     p_display_name: name,
     p_starting_weight: weight,
@@ -174,7 +174,7 @@ $("create-btn").addEventListener("click", async () => {
   const name = $("new-challenge-name").value.trim();
   if (!name) return;
 
-  const { data, error } = await supabase.rpc("create_challenge", { p_name: name });
+  const { data, error } = await db.rpc("create_challenge", { p_name: name });
   if (error) {
     alert(error.message);
     return;
@@ -197,7 +197,7 @@ async function openChallenge(challengeId) {
   hide($("onboard-view"));
   show($("main-view"));
 
-  const { data: challenge } = await supabase
+  const { data: challenge } = await db
     .from("challenges")
     .select("name, join_code")
     .eq("id", challengeId)
@@ -216,7 +216,7 @@ async function openChallenge(challengeId) {
 }
 
 async function loadMyStats() {
-  const { data, error } = await supabase.rpc("get_my_stats", {
+  const { data, error } = await db.rpc("get_my_stats", {
     p_challenge_id: currentChallengeId,
   });
   if (error || !data || data.length === 0) return;
@@ -254,7 +254,7 @@ $("save-goal-btn").addEventListener("click", async () => {
     return;
   }
 
-  const { error } = await supabase.rpc("set_goal", {
+  const { error } = await db.rpc("set_goal", {
     p_challenge_id: currentChallengeId,
     p_goal_weight: goal,
   });
@@ -269,7 +269,7 @@ $("save-goal-btn").addEventListener("click", async () => {
 });
 
 async function loadLeaderboard() {
-  const { data, error } = await supabase.rpc("get_leaderboard", {
+  const { data, error } = await db.rpc("get_leaderboard", {
     p_challenge_id: currentChallengeId,
   });
   const list = $("leaderboard-list");
@@ -329,7 +329,7 @@ $("log-btn").addEventListener("click", async () => {
     return;
   }
 
-  const { data: existing } = await supabase
+  const { data: existing } = await db
     .from("weigh_ins")
     .select("id")
     .eq("challenge_id", currentChallengeId)
@@ -338,9 +338,9 @@ $("log-btn").addEventListener("click", async () => {
 
   let error;
   if (existing) {
-    ({ error } = await supabase.from("weigh_ins").update({ weight }).eq("id", existing.id));
+    ({ error } = await db.from("weigh_ins").update({ weight }).eq("id", existing.id));
   } else {
-    ({ error } = await supabase.from("weigh_ins").insert({
+    ({ error } = await db.from("weigh_ins").insert({
       challenge_id: currentChallengeId,
       weight,
       recorded_on: date,
